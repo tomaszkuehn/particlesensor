@@ -1,6 +1,7 @@
 #include <M5Stack.h>
 
 hw_timer_t * timer = NULL;
+hw_timer_t * timer1 = NULL;
 int _pm1;
 int _pm25;
 int _pm10;
@@ -113,9 +114,19 @@ class particlesensor {
     sleepstatus = 0;
     _counter = 0;
   }
+  void restart() {
+    _counter = 0; 
+  }
 };
 
 particlesensor ps;
+typedef struct particles {
+  int pm1;
+  int pm25;
+  int pm10;
+};
+
+particles psarr[300];
 
 void setup() {
   M5.begin();
@@ -124,10 +135,12 @@ void setup() {
   M5.Lcd.setTextSize(2);
   M5.Lcd.printf("Particle sensor");
   Serial2.begin(9600, SERIAL_8N1, 16, 17);
+  //set up serial receiver
   timer = timerBegin(0, 80, true);
   timerAttachInterrupt(timer, &serialRX, true);
   timerAlarmWrite(timer, 5000, true); // usec
   timerAlarmEnable(timer);
+
   ps.start();
   pinMode(39, INPUT); // button A
   M5.Lcd.setCursor(25, 225);
@@ -135,11 +148,10 @@ void setup() {
 }
 
 
-
 void loop() {
   int btnA = digitalRead(39);
   if (btnA == 0) {
-    ps.start();
+    //ps.start();
   }
   sleep(1);
   M5.Lcd.setCursor(10, 50);
@@ -153,7 +165,22 @@ void loop() {
   M5.Lcd.printf("PM2.5 %4d.%1d", ps.pm25/10, ps.pm25%10);
   M5.Lcd.setCursor(10, 110);
   M5.Lcd.printf("PM10  %4d.%1d", ps.pm10/10, ps.pm10%10);
-  if(ps.counter >= 25) {
-    ps.sleep();
+  if(ps.counter >= 17) {
+    M5.Lcd.fillRect(0, 130, 320, 220, BLACK);
+    int max25 = 0;
+    for(int i = 0; i < 299; i++) {
+      psarr[i] = psarr[i+1];
+      if(psarr[i].pm25 > max25) {
+        max25 = psarr[i].pm25;
+      }
+    }
+    psarr[299].pm25 = ps.pm25/10;
+    if(psarr[299].pm25 > max25) {
+        max25 = psarr[299].pm25;
+      }
+    for(int i = 1; i < 300; i++){
+      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm25, i, 220 - psarr[i].pm25, 0xFFFFFF); 
+    }
+    ps.restart();
   }
 }
