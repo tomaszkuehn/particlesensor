@@ -36,7 +36,7 @@ void serialRX() {
         _tpm25 = 10 * (rxbuf[10]*256+rxbuf[11]);
         _tpm10 = 10 * (rxbuf[12]*256+rxbuf[13]);
          
-        if(_counter > 20)
+        if(_counter > 15)
         {
           _tpm1 = (int)((_pm1*10 + _tpm1)/11); 
           _tpm25 = (int)((_pm25*10 + _tpm25)/11);
@@ -61,6 +61,7 @@ void serialRX() {
 class particlesensor {
   public:
   particlesensor() {
+    sleepstatus = 0;
   }
   
   int pm1;
@@ -68,7 +69,7 @@ class particlesensor {
   int pm10;
   int counter;
 
-  int sleepstatus = 0;
+  int sleepstatus;
   int read() {
     if(sleepstatus) {
       return 0;
@@ -89,6 +90,7 @@ class particlesensor {
   }
   void sleep() {
     if(sleepstatus == 0) {
+      Serial2.write(0x00);
       Serial2.write(0x42);
       Serial2.write(0x4d);  
       Serial2.write(0xe4);
@@ -96,10 +98,11 @@ class particlesensor {
       Serial2.write(0x00);
       Serial2.write(0x01);
       Serial2.write(0x73);
+      sleepstatus = 1;
     }
-    sleepstatus = 1;
   }
   void start() {
+    Serial2.write(0x00);
     Serial2.write(0x42);
     Serial2.write(0x4d);  
     Serial2.write(0xe4);
@@ -150,7 +153,7 @@ void loop() {
   M5.Lcd.printf("PM2.5 %4d.%1d", ps.pm25/10, ps.pm25%10);
   M5.Lcd.setCursor(10, 110);
   M5.Lcd.printf("PM10  %4d.%1d", ps.pm10/10, ps.pm10%10);
-  if(ps.counter >= 50) {
+  if(ps.counter >= 25) {
     ps.sleep();
   }
 }
