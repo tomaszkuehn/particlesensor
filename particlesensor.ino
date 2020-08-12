@@ -132,12 +132,12 @@ void loop() {
   M5.Lcd.setCursor(10, 50);
   M5.Lcd.printf("# %3d", ps.counter);
   M5.Lcd.setCursor(10, 70);  
-  M5.Lcd.printf("PM1.0 %4d", ps.pm1);
+  M5.Lcd.printf("PM1.0 %4d.%1d", ps.pm1/10, ps.pm1%10);
   M5.Lcd.setCursor(10, 90);
-  M5.Lcd.printf("PM2.5 %4d", ps.pm25);
+  M5.Lcd.printf("PM2.5 %4d.%1d", ps.pm25/10, ps.pm25%10);
   M5.Lcd.setCursor(10, 110);
-  M5.Lcd.printf("PM10  %4d", ps.pm10);
-  if(ps.counter > 50) {
+  M5.Lcd.printf("PM10  %4d.%1d", ps.pm10/10, ps.pm10%10);
+  if(ps.counter >= 50) {
     ps.sleep();
   }
 }
