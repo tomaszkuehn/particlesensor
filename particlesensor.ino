@@ -143,8 +143,6 @@ void setup() {
 
   ps.start();
   pinMode(39, INPUT); // button A
-  M5.Lcd.setCursor(25, 225);
-  M5.Lcd.printf("RESTART");
 }
 
 
@@ -154,32 +152,49 @@ void loop() {
     //ps.start();
   }
   sleep(1);
-  M5.Lcd.setCursor(10, 50);
-  M5.Lcd.fillRect(0, 40, 320, 120, BLACK);
+  M5.Lcd.fillRect(0, 25, 320, 90, 0x31A6);
   ps.read();
-  M5.Lcd.setCursor(10, 50);
+  M5.Lcd.setCursor(10, 30);
   M5.Lcd.printf("# %d ", ps.counter);
-  M5.Lcd.setCursor(10, 70);  
+  M5.Lcd.setCursor(10, 50);  
   M5.Lcd.printf("PM1.0 %4d.%1d", ps.pm1/10, ps.pm1%10);
-  M5.Lcd.setCursor(10, 90);
+  M5.Lcd.setCursor(10, 70);
   M5.Lcd.printf("PM2.5 %4d.%1d", ps.pm25/10, ps.pm25%10);
-  M5.Lcd.setCursor(10, 110);
+  M5.Lcd.setCursor(10, 90);
   M5.Lcd.printf("PM10  %4d.%1d", ps.pm10/10, ps.pm10%10);
-  if(ps.counter >= 17) {
-    M5.Lcd.fillRect(0, 130, 320, 220, BLACK);
-    int max25 = 0;
+  if(ps.counter >= 30) {
+    M5.Lcd.fillRect(0, 120, 320, 100, 0x31A6);
+    int maxp = 0;
     for(int i = 0; i < 299; i++) {
       psarr[i] = psarr[i+1];
-      if(psarr[i].pm25 > max25) {
-        max25 = psarr[i].pm25;
+      if(psarr[i].pm25 > maxp) {
+        maxp = psarr[i].pm25;
+      }
+      if(psarr[i].pm10 > maxp) {
+        maxp = psarr[i].pm10;
+      }
+      if(psarr[i].pm1 > maxp) {
+        maxp = psarr[i].pm1;
       }
     }
     psarr[299].pm25 = ps.pm25/10;
-    if(psarr[299].pm25 > max25) {
-        max25 = psarr[299].pm25;
+    psarr[299].pm10 = ps.pm10/10;
+    psarr[299].pm1  = ps.pm1/10;
+    if(psarr[299].pm25 > maxp) {
+        maxp = psarr[299].pm25;
       }
-    for(int i = 1; i < 300; i++){
-      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm25, i, 220 - psarr[i].pm25, 0xFFFFFF); 
+    if(psarr[299].pm10 > maxp) {
+        maxp = psarr[299].pm10;
+      }
+    if(psarr[299].pm1 > maxp) {
+        maxp = psarr[299].pm1;
+      }
+    M5.Lcd.drawLine(0, 170, 320, 170, 0xCE79); 
+    M5.Lcd.drawLine(0, 220, 320, 220, 0xCE79);
+    for(int i = 1; i < 300; i++){ 
+      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm1, i, 220 - psarr[i].pm10, 0xFC60);
+      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm10, i, 220 - psarr[i].pm1, 0xE7E5);
+      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm25, i, 220 - psarr[i].pm25, 0xFA02);
     }
     ps.restart();
   }
