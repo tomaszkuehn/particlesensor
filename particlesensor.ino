@@ -83,8 +83,6 @@ class particlesensor {
       c1 = _intcount;
       usleep(100);
     }
-    //M5.Lcd.setCursor(100, 50);
-    //M5.Lcd.printf("%d", c1);
     pm1  = _pm1;
     pm25 = _pm25;
     pm10 = _pm10;
@@ -134,9 +132,11 @@ particles psarr[300];
 void setup() {
   M5.begin();
   M5.Power.begin();
+  M5.Lcd.fillRect(0, 0, 320, 20, 0x784F);
   M5.Lcd.setTextColor(WHITE);
   M5.Lcd.setTextSize(2);
-  M5.Lcd.printf("Particle sensor");
+  M5.Lcd.setCursor(2, 2);
+  M5.Lcd.printf("Particle sensor v.0.1");
   Serial2.begin(9600, SERIAL_8N1, 16, 17);
   //set up serial receiver
   timer = timerBegin(0, 80, true);
@@ -146,9 +146,56 @@ void setup() {
 
   ps.start();
   pinMode(39, INPUT); // button A
+  draw_chart();
   _continue = 1;
 }
 
+void draw_chart() {
+  int i;
+  int ii;
+  int maxp = 0;
+  
+  M5.Lcd.fillRect(0, 120, 320, 100, 0x2104);
+  for(i = 0; i < 300; i = i + 20){
+    M5.Lcd.drawLine(i + 18, 120, i + 18, 220, 0x31A6);
+  }
+  M5.Lcd.drawLine(0, 170, 320, 170, 0x31A6);
+  for(i = 0; i < 299; i++) {
+    psarr[i] = psarr[i+1];
+    if(psarr[i].pm25 > maxp) {
+      maxp = psarr[i].pm25;
+    }
+    if(psarr[i].pm10 > maxp) {
+      maxp = psarr[i].pm10;
+    }
+    if(psarr[i].pm1 > maxp) {
+      maxp = psarr[i].pm1;
+    }
+  }
+  psarr[299].pm25 = ps.pm25;
+  psarr[299].pm10 = ps.pm10;
+  psarr[299].pm1  = ps.pm1;
+  if(psarr[299].pm25 > maxp) {
+      maxp = psarr[299].pm25;
+    }
+  if(psarr[299].pm10 > maxp) {
+      maxp = psarr[299].pm10;
+    }
+  if(psarr[299].pm1 > maxp) {
+      maxp = psarr[299].pm1;
+    }
+  maxp = maxp/100 + 1;
+
+  M5.Lcd.drawLine(0, 220, 320, 220, 0xCE79);
+  for(int i = 1; i < 300; i++){ 
+    ii = i + 18;
+    M5.Lcd.drawLine(ii - 1, 220 - psarr[i-1].pm1/maxp, ii, 220 - psarr[i].pm1/maxp, 0xFC60);
+    M5.Lcd.drawLine(ii - 1, 220 - psarr[i-1].pm10/maxp, ii, 220 - psarr[i].pm10/maxp, 0xD5C3);
+    M5.Lcd.drawLine(ii - 1, 220 - psarr[i-1].pm25/maxp, ii, 220 - psarr[i].pm25/maxp, 0xFA02);
+  }  
+  M5.Lcd.setCursor(0, 120);
+  M5.Lcd.printf("%d", maxp * 10);
+}
 
 void loop() {
   int btnA = digitalRead(39);
@@ -166,41 +213,8 @@ void loop() {
   M5.Lcd.printf("PM2.5 %4d.%1d", ps.pm25/10, ps.pm25%10);
   M5.Lcd.setCursor(10, 90);
   M5.Lcd.printf("PM10  %4d.%1d", ps.pm10/10, ps.pm10%10);
-  if(ps.counter >= 5) {
-    M5.Lcd.fillRect(0, 120, 320, 100, 0x2104);
-    int maxp = 0;
-    for(int i = 0; i < 299; i++) {
-      psarr[i] = psarr[i+1];
-      if(psarr[i].pm25 > maxp) {
-        maxp = psarr[i].pm25;
-      }
-      if(psarr[i].pm10 > maxp) {
-        maxp = psarr[i].pm10;
-      }
-      if(psarr[i].pm1 > maxp) {
-        maxp = psarr[i].pm1;
-      }
-    }
-    psarr[299].pm25 = ps.pm25;
-    psarr[299].pm10 = ps.pm10;
-    psarr[299].pm1  = ps.pm1;
-    if(psarr[299].pm25 > maxp) {
-        maxp = psarr[299].pm25;
-      }
-    if(psarr[299].pm10 > maxp) {
-        maxp = psarr[299].pm10;
-      }
-    if(psarr[299].pm1 > maxp) {
-        maxp = psarr[299].pm1;
-      }
-    maxp = maxp/100+1;
-    M5.Lcd.drawLine(0, 170, 320, 170, 0xCE79); 
-    M5.Lcd.drawLine(0, 220, 320, 220, 0xCE79);
-    for(int i = 1; i < 300; i++){ 
-      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm1/maxp, i, 220 - psarr[i].pm1/maxp, 0xFC60);
-      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm10/maxp, i, 220 - psarr[i].pm10/maxp, 0xD5C3);
-      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm25/maxp, i, 220 - psarr[i].pm25/maxp, 0xFA02);
-    }
+  if(ps.counter >= 30) {
+    draw_chart();
     ps.restart();
   }
 }
