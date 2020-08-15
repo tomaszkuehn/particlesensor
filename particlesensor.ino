@@ -7,6 +7,7 @@ int _pm25;
 int _pm10;
 int _counter = 0;  // counts number of measurements
 int _intcount = 0; // counts interrupts
+int _continue = 0; // indicates continuous operation
 
 /* Interrupt routine */
 void serialRX() {
@@ -37,11 +38,12 @@ void serialRX() {
         _tpm25 = 10 * (rxbuf[10]*256+rxbuf[11]);
         _tpm10 = 10 * (rxbuf[12]*256+rxbuf[13]);
          
-        if(_counter > 15)
+        if(_counter > 15 || _continue == 1) // ignore averaging after restart
         {
           _tpm1 = (int)((_pm1*10 + _tpm1)/11); 
           _tpm25 = (int)((_pm25*10 + _tpm25)/11);
           _tpm10 = (int)((_pm10*10 + _tpm10)/11);
+          _continue = 1;
         }
         _counter++;
         _pm1 = _tpm1;
@@ -113,6 +115,7 @@ class particlesensor {
     Serial2.write(0x74); 
     sleepstatus = 0;
     _counter = 0;
+    _continue = 0;
   }
   void restart() {
     _counter = 0; 
@@ -143,6 +146,7 @@ void setup() {
 
   ps.start();
   pinMode(39, INPUT); // button A
+  _continue = 1;
 }
 
 
@@ -162,8 +166,8 @@ void loop() {
   M5.Lcd.printf("PM2.5 %4d.%1d", ps.pm25/10, ps.pm25%10);
   M5.Lcd.setCursor(10, 90);
   M5.Lcd.printf("PM10  %4d.%1d", ps.pm10/10, ps.pm10%10);
-  if(ps.counter >= 30) {
-    M5.Lcd.fillRect(0, 120, 320, 100, 0x31A6);
+  if(ps.counter >= 5) {
+    M5.Lcd.fillRect(0, 120, 320, 100, 0x2104);
     int maxp = 0;
     for(int i = 0; i < 299; i++) {
       psarr[i] = psarr[i+1];
@@ -177,9 +181,9 @@ void loop() {
         maxp = psarr[i].pm1;
       }
     }
-    psarr[299].pm25 = ps.pm25/10;
-    psarr[299].pm10 = ps.pm10/10;
-    psarr[299].pm1  = ps.pm1/10;
+    psarr[299].pm25 = ps.pm25;
+    psarr[299].pm10 = ps.pm10;
+    psarr[299].pm1  = ps.pm1;
     if(psarr[299].pm25 > maxp) {
         maxp = psarr[299].pm25;
       }
@@ -189,12 +193,13 @@ void loop() {
     if(psarr[299].pm1 > maxp) {
         maxp = psarr[299].pm1;
       }
+    maxp = maxp/100+1;
     M5.Lcd.drawLine(0, 170, 320, 170, 0xCE79); 
     M5.Lcd.drawLine(0, 220, 320, 220, 0xCE79);
     for(int i = 1; i < 300; i++){ 
-      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm1, i, 220 - psarr[i].pm10, 0xFC60);
-      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm10, i, 220 - psarr[i].pm1, 0xE7E5);
-      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm25, i, 220 - psarr[i].pm25, 0xFA02);
+      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm1/maxp, i, 220 - psarr[i].pm1/maxp, 0xFC60);
+      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm10/maxp, i, 220 - psarr[i].pm10/maxp, 0xD5C3);
+      M5.Lcd.drawLine(i - 1, 220 - psarr[i-1].pm25/maxp, i, 220 - psarr[i].pm25/maxp, 0xFA02);
     }
     ps.restart();
   }
