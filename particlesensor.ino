@@ -89,6 +89,9 @@ class particlesensor {
     counter = _counter;
     return counter > 10;
   }
+  void continuousMode() {
+    _continue = 0; 
+  }
   void sleep() {
     if(sleepstatus == 0) {
       Serial2.write(0x00);
@@ -145,9 +148,9 @@ void setup() {
   timerAlarmEnable(timer);
 
   ps.start();
+  ps.continuousMode();
   pinMode(39, INPUT); // button A
   draw_chart();
-  _continue = 1;
 }
 
 void draw_chart() {
